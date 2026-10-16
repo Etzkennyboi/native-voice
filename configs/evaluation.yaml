@@ -1,0 +1,8 @@
+# NaturalVoice AI — evaluation configuration.
+#
+# PLACEHOLDER: populated in Phase 2 ("Establish a naturalness benchmark",
+# PRD §7). Kept in the scaffold so the §14 repository layout is complete,
+# but no Phase 2 logic is implemented in this pass.
+
+test_set_size: 0        # target: 30-50 fixed passages once Phase 2 starts
+metrics: []             # e.g. [wer, mos, speaker_similarity] defined in Phase 2

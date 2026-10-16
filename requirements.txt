@@ -1,0 +1,15 @@
+# NaturalVoice AI — Phase 0/1 dependencies (PRD §6.1, §10 pinning)
+#
+# Colab note: torch/torchaudio CUDA-matched builds come preinstalled there.
+# Do NOT force-reinstall torch on Colab unless the model package requires a
+# different build — verify first, then record the exact version in the env log.
+
+voxcpm==2.0.3            # VoxCPM2-line baseline (Colab found 1.0.x / 1.5.0 / 2.0.x on PyPI; pinning the newest stable 2.x); update + re-run notebook 01 when bumping
+torch>=2.4,<3.0
+torchaudio>=2.4
+numpy>=1.26,<3.0
+soundfile>=0.12.1
+gradio>=5.0,<6.0
+pyyaml>=6.0.1
+huggingface_hub>=0.24
+pytest>=8.0

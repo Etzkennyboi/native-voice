@@ -1,0 +1,35 @@
+# NaturalVoice AI — Phase 0/1 baseline configuration (PRD v1.0 §6, §14)
+#
+# SWAP NOTE: the PRD's candidate baseline is "VoxCPM2" (2B params, ~20 GB VRAM
+# when fine-tuning). A live Colab run (Oct 16 2026) confirmed `voxcpm`
+# 1.0.x / 1.5.0 / 2.0.x exist on PyPI; requirements.txt pins voxcpm==2.0.3.
+# Pending Colab introspection of that package: the exact VoxCPM2 checkpoint id
+# (candidate: "openbmb/VoxCPM2") and API signatures. Until then, `model.id`
+# points at the documented OpenBMB VoxCPM checkpoint as the fast feasibility
+# baseline. Model-specific knobs live in this file + the "MODEL API ADAPTER"
+# functions in app/tts_engine.py — changing the baseline should require edits
+# in only those two places, then re-run notebooks/01_environment_check.ipynb.
+
+model:
+  id: "openbmb/VoxCPM2"   # confirmed default of voxcpm 2.0.3 (Colab introspection)
+  revision: ""          # PRD §10 reproducibility: pin a checkpoint revision once verified
+  device: "auto"        # from_pretrained(device=...) — "auto" falls back sensibly on Colab
+  optimize: true        # torch.compile (first call is slower to warm up; disable to debug)
+output:
+  sample_rate: 16000    # TODO verify: ZipEnhancer is 16k and likely matches output rate
+inference:
+  max_chars_per_segment: 300
+  cfg_value: 2.0        # CLI range 0.1-10.0, recommended 1.0-3.0
+  inference_timesteps: 10  # CLI range 1-100, recommended 4-30
+  seed: 3407
+  prompt:               # reference voice for zero-shot cloning — REQUIRES documented consent (PRD §8)
+    text: ""
+    wav: ""
+limits:
+  max_script_chars: 5000
+paths:
+  outputs_dir: "outputs"
+  run_log: "outputs/run_log.jsonl"
+license:
+  checkpoint_id: "openbmb/VoxCPM2"
+  license_verified: false   # must be confirmed before any paid training phase (PRD §6.1, §8)

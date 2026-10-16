@@ -1,0 +1,43 @@
+# NaturalVoice AI — keep credentials, private audio, model weights, and large
+# generated files out of Git (PRD §14, §10 Security, §11).
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# --- Generated audio (outputs + any user-provided references) ---
+outputs/
+data/audio/
+*.wav
+*.mp3
+*.flac
+*.ogg
+
+# --- Model weights / checkpoints / heavy artifacts ---
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+checkpoints/
+persist/
+
+# --- Secrets & credentials (never commit tokens or API keys, PRD §10) ---
+.env
+.env.*
+*.key
+secrets.json
+secrets*.yaml
+secrets*.yml
+
+# --- Local app logs ---
+# (run metadata the user may want to keep lives in outputs/, not logs/)
+logs/
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
