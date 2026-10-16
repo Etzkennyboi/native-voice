@@ -106,6 +106,14 @@ def generate(script: str, cfg_value: float, timesteps: int, seed: str, progress=
     return audio_path, audio_path, meta, _history_table(engine)
 
 
+def _gr_audio(label: str) -> gr.Audio:
+    """gradio 5.x exposed show_download_button; 6.x removed it (download is built in)."""
+    try:
+        return gr.Audio(label=label, type="filepath", show_download_button=True)
+    except TypeError:
+        return gr.Audio(label=label, type="filepath")
+
+
 def build_ui() -> gr.Blocks:
     limits = get_engine().cfg.get("limits", {})
     max_chars = int(limits.get("max_script_chars", 5000))
@@ -147,7 +155,7 @@ def build_ui() -> gr.Blocks:
                         placeholder="e.g. 3407",
                     )
             with gr.Column(scale=2):
-                audio_out = gr.Audio(label="Generated audio", type="filepath", show_download_button=True)
+                audio_out = _gr_audio("Generated audio")
                 download_out = gr.DownloadButton(label="Download WAV", visible=False)
                 meta_out = gr.Markdown("Generation metadata will appear here.")
 
