@@ -183,7 +183,18 @@ class TTSEngine:
                 torch.cuda.manual_seed_all(seed)
 
         t_gen = time.perf_counter()
-        segments = self._infer_segment(script, overrides)
+        # Long scripts: split at sentence boundaries, style-wrap each segment,
+        # then concatenate (PRD §10 "Long scripts may be split into segments").
+        max_chars = int(infer_cfg.get("max_chars_per_segment", 300))
+        # Narration style: VoxCPM2's native control syntax "({style}){text}",
+        # verified sounding human in the 2026-10-16 probe (all tags ✅).
+        # Empty/None → raw model voice.
+        style = re.sub(r"[^a-z]", "", str(infer_cfg.get("narration_style") or "").lower())
+        parts: list[np.ndarray] = []
+        for chunk in self._chunk_text(script, max_chars):
+            seg_text = f"({style}){chunk}" if style else chunk
+            parts.append(self._infer_segment(seg_text, overrides))
+        segments = parts[0] if len(parts) == 1 else np.concatenate(parts)
         gen_s = time.perf_counter() - t_gen
 
         tmp_path = out_dir / f"tmp-{run_id}.wav"
@@ -208,8 +219,8 @@ class TTSEngine:
                 "cfg_value": infer_cfg.get("cfg_value"),
                 "inference_timesteps": infer_cfg.get("inference_timesteps"),
                 "seed": seed,
-                "normalize": infer_cfg.get("normalize", True),
-                "denoise": infer_cfg.get("denoise", False),
+                "narration_style": infer_cfg.get("narration_style") or "(raw model voice)",
+                "segments": len(parts),
             },
             "input_chars": len(script),
             "audio_file": final_path.name,

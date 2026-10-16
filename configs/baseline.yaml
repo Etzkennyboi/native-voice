@@ -24,6 +24,7 @@ inference:
   cfg_value: 2.0        # CLI range 0.1-10.0, recommended 1.0-3.0
   inference_timesteps: 10  # CLI range 1-100, recommended 4-30
   seed: 3407
+  narration_style: "documentary"   # verified-human control token (2026-10-16 probe); "" = raw model voice
   prompt:               # reference voice for zero-shot cloning — REQUIRES documented consent (PRD §8)
     text: ""
     wav: ""

@@ -62,7 +62,7 @@ def _history_table(engine) -> list[list]:
     return rows
 
 
-def generate(script: str, cfg_value: float, timesteps: int, seed: str, progress=gr.Progress()):
+def generate(script: str, cfg_value: float, timesteps: int, seed: str, narration_style: str, progress=gr.Progress()):
     """Gradio handler. Validates input, generates audio, updates all outputs.
 
     Raises gr.Error with a user-safe message on any failure — Gradio shows
@@ -73,16 +73,19 @@ def generate(script: str, cfg_value: float, timesteps: int, seed: str, progress=
 
     try:
         script_clean = validate_script(script, max_chars=int(engine.cfg.get("limits", {}).get("max_script_chars", 5000)))
+        # Dropdown value "none (raw model voice)" means: no wrapping tag applied.
+        style = "" if narration_style.startswith("none") else narration_style
         settings_overrides = {
             "cfg_value": float(cfg_value),
             "inference_timesteps": int(timesteps),
             "seed": sanitize_seed(seed),
+            "narration_style": style,
         }
     except ValidationError as exc:
         raise gr.Error(str(exc)) from None
 
     try:
-        record = engine.generate(script, overrides=settings_overrides)
+        record = engine.generate(script_clean, overrides=settings_overrides)
     except ValidationError as exc:
         engine.log_failure(script, str(exc))
         raise gr.Error(str(exc)) from None  # already user-safe
@@ -134,12 +137,18 @@ def build_ui() -> gr.Blocks:
                     max_lines=24,
                 )
                 generate_btn = gr.Button("Generate narration", variant="primary")
-                with gr.Accordion("Generation settings (model-supported controls only)", open=False):
-                    gr.Markdown(
-                        "Only controls the baseline model actually supports are exposed here. "
-                        "Style/expression controls (PRD §5.3) are intentionally absent — "
-                        "they arrive with Phase 4, never as simulated UI."
-                    )
+                # Narration style — VoxCPM2's NATIVE control tokens, verified
+                # human-sounding in the 2026-10-16 probe (experiments/2026-10-16_phase0-1.md).
+                # These wrap text as "(style){text}" before the model sees it, so a plain
+                # script gains a human narrator delivery by default.
+                style_dd = gr.Dropdown(
+                    choices=["documentary", "narrator", "calm", "warm", "slow", "none (raw model voice)"],
+                    value="documentary",
+                    label="Narration style",
+                    info="Wrap the script in a verified narration control token "
+                         "(native model feature, not simulated).",
+                )
+                with gr.Accordion("Advanced generation settings", open=False):
                     cfg_slider = gr.Slider(
                         1.0, 5.0, value=float(infer_cfg.get("cfg_value", 2.0)), step=0.1,
                         label="CFG guidance (cfg_value)",
@@ -168,7 +177,7 @@ def build_ui() -> gr.Blocks:
 
         generate_btn.click(
             fn=generate,
-            inputs=[script_in, cfg_slider, steps_slider, seed_in],
+            inputs=[script_in, cfg_slider, steps_slider, seed_in, style_dd],
             outputs=[audio_out, download_out, meta_out, history],
         )
 
