@@ -16,7 +16,9 @@ model:
   device: "auto"        # from_pretrained(device=...) — "auto" falls back sensibly on Colab
   optimize: true        # torch.compile (first call is slower to warm up; disable to debug)
 output:
-  sample_rate: 16000    # TODO verify: ZipEnhancer is 16k and likely matches output rate
+  # Verified two ways (2026-10-16): checkpoint config.json audio_vae.out_sample_rate=48000
+  # AND natural playback speed confirmed by listening. (Old value 16000 produced slow/deep audio.)
+  sample_rate: 48000
 inference:
   max_chars_per_segment: 300
   cfg_value: 2.0        # CLI range 0.1-10.0, recommended 1.0-3.0
