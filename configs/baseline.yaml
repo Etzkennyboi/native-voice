@@ -12,7 +12,7 @@
 
 model:
   id: "openbmb/VoxCPM2"   # confirmed default of voxcpm 2.0.3 (Colab introspection)
-  revision: ""          # PRD §10 reproducibility: pin a checkpoint revision once verified
+  revision: "32279effe8c19989596f05d353d1447f51d9e915"  # HF snapshot verified loading on T4, Oct 16 2026 (PRD §10)
   device: "auto"        # from_pretrained(device=...) — "auto" falls back sensibly on Colab
   optimize: true        # torch.compile (first call is slower to warm up; disable to debug)
 output:

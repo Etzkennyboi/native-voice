@@ -1,0 +1,6 @@
+# Normalize line endings across contributors/machines (PRD §10 reproducibility)
+* text=auto eol=lf
+*.ipynb text eol=lf
+*.png binary
+*.jpg binary
+*.wav binary
