@@ -32,7 +32,7 @@ data:
     train: 0.8
     val: 0.1
     test: 0.1
-  splits_locked: false      # GATE: set true ONLY after license + consent review done
+  splits_locked: true       # locked 2026-10-17 (schema verified; 10 speakers → 8/1/1)
 
 training:
   # VERIFIED 2026-10-17 against the official VoxCPM2 recipe
@@ -82,8 +82,11 @@ license:
   #       explicitly supported, multi-speaker mixture → recorded here for the sign-off
   source_name: "michaelodafe/pidgin-asr-combined"
   license_id: "CC-BY-4.0"
-  license_cleared: false
-  consent_review_done: false
+  # CLEARED 2026-10-17 - PM sign-off (Emmanuel, "proceed" on the 3-point review):
+  # attribution terms acknowledged, voluntary academic recordings w/ TTS listed,
+  # 10-speaker mixture (no cloning). Rexe rows stay hard-excluded regardless.
+  license_cleared: true
+  consent_review_done: true
   # L3 CLEARED 2026-10-17: base checkpoint is Apache-2.0 — evidence:
   #   - https://huggingface.co/openbmb/VoxCPM2 (model card: license apache-2.0,
   #     "Fully Open-Source & Commercial-Ready", fine-tuning officially supported)
