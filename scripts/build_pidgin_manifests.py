@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 """Build Nigerian Pidgin (pcm) train/val/test manifests (PRD §8 / Phase 3).
 
-HARD GATES — the script refuses to run until both are satisfied:
-  1. License: configs/pidgin_baseline.yaml must mark the source dataset as
-     license_cleared: true (done only after the licence text has actually been read, PRD §8).
-  2. Schema: VERIFIED 2026-10-17 — official VoxCPM2 training format is
-     {"audio": <path>, "text": <str>} (+optional "duration"/"dataset_id"); this script
-     emits exactly that (see note below).
+HARD GATES — the script refuses to run until all are satisfied:
+  1. license_cleared: true   in configs/pidgin_baseline.yaml (only after the licence
+     documents have actually been read — PRD §8).
+  2. consent_review_done: true  (same condition).
+  3. splits_locked: true     (flipped after the Stage 1 schema verification, done 2026-10-17).
 
-Input format: Common Voice-style validated TSV (auto-detects the
-path/sentence/speaker columns), plus the audio directory the `path` column refers to.
+Two input modes:
+  --tsv + --audio-dir        Common Voice-style validated TSV + its clips directory.
+  --hf-parquet-dir           a downloaded HF-parquet dataset on disk (e.g. the pinned
+                             snapshot of michaelodafe/pidgin-asr-combined). Audio bytes
+                             are unpacked to --audio-dir. Rows whose `source` matches
+                             --exclude-source are skipped (default: "Rexe" — license
+                             unspecified in that source = hard exclusion, PRD §8).
 
-Output (JSONL, one record per utterance):
-  data/manifests/pidgin_train.jsonl / pidgin_val.jsonl / pidgin_test.jsonl
-Splits are SPEAKER-DISJOINT (no speaker appears in two splits) and deterministic
-(seed fixed in configs/pidgin_baseline.yaml).
+Output: data/manifests/pidgin_{train,val,test}.jsonl in the VERIFIED VoxCPM2 format
+  {"audio": <path>, "text": <str>, "duration": <seconds>} (+ traceability metadata).
+Splits are SPEAKER-DISJOINT (no speaker or utterance appears in two splits) and
+deterministic (seed pinned in configs/pidgin_baseline.yaml).
 """
 from __future__ import annotations
 
@@ -25,32 +29,28 @@ import random
 import sys
 from pathlib import Path
 
-import soundfile as sf
-import yaml
-
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-# VERIFIED 2026-10-17 against the official VoxCPM2 fine-tune format
-# (OpenBMB/VoxCPM examples/train_data_example.jsonl + src/voxcpm/training/data.py):
-#   required: "audio" (path — absolute or relative), "text"
-#   optional: "duration" (seconds — lets length filtering skip audio loading),
-#             "dataset_id" (int). Extra metadata columns are ignored by the loader.
-#   Loader casts audio to 16 kHz itself — no client-side resampling needed.
+REQUIRED_GATES = ("license_cleared", "consent_review_done", "splits_locked")
+
+
 def load_split_config() -> dict:
+    import yaml
     path = REPO / "configs" / "pidgin_baseline.yaml"
     with open(path, encoding="utf-8") as fh:
         cfg = yaml.safe_load(fh)
-    if not cfg.get("data", {}).get("splits_locked", False):
-        raise SystemExit(
-            "GATE: configs/pidgin_baseline.yaml has splits_locked: false — "
-            "set it true ONLY after the fine-tune schema verification cell has run."
-        )
-    if not cfg.get("license", {}).get("license_cleared", False):
-        raise SystemExit(
-            "GATE: license_cleared is false — the licence must be read and filed "
-            "before manifests are built (PRD §8)."
-        )
+    data_gates = {
+        "license_cleared": bool(cfg["license"].get("license_cleared", False)),
+        "consent_review_done": bool(cfg["license"].get("consent_review_done", False)),
+        "splits_locked": bool(cfg["data"].get("splits_locked", False)),
+    }
+    for flag, ok in data_gates.items():
+        if not ok:
+            raise SystemExit(
+                f"GATE: configs/pidgin_baseline.yaml has {flag}: false — "
+                "flip it only after the required review/documentation (PRD §8)."
+            )
     return cfg
 
 
@@ -58,39 +58,26 @@ def detect_columns(header: list[str]) -> dict:
     low = [h.strip().lower() for h in header]
     def find(*aliases: str) -> str:
         for a in aliases:
-            for h in low:
-                if a == h:
-                    return header[low.index(a)]
-        for a in aliases:  # substring fallback
+            if a in low:
+                return header[low.index(a)]
+        for a in aliases:
             for h in low:
                 if a in h:
                     return header[low.index(a)]
         raise KeyError(f"no column matching {aliases} in {header}")
-    return {"path": find("path", "filename", "clip"), "text": find("sentence", "transcript", "text"), "speaker": find("speaker", "client_id")}
+    return {"path": find("path", "filename", "clip"),
+            "text": find("sentence", "transcript", "text"),
+            "speaker": find("speaker", "client_id")}
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--tsv", required=True, help="Common Voice-style validated .tsv")
-    ap.add_argument("--audio-dir", required=True, help="directory holding clip files")
-    ap.add_argument("--max-speakers", type=int, default=0, help="cap speakers (0 = all)")
-    ap.add_argument("--align-schema-only", action="store_true",
-                    help="print schema review summary and exit (verification aid)")
-    args = ap.parse_args()
-
-    cfg = load_split_config()
-    with open(args.tsv, encoding="utf-8") as fh:
+def collect_from_tsv(tsv: str, audio_dir: Path) -> dict[str, list[dict]]:
+    import soundfile as sf
+    with open(tsv, encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh, delimiter="\t"))
-
     cols = detect_columns(rows[0].keys() if rows else [])
-    audio_dir = Path(args.audio_dir)
-    seed = int(cfg["training"]["seed"])
-
     per_speaker: dict[str, list[dict]] = {}
-    r = random.Random(seed)
     for row in rows:
-        rel = row[cols["path"]]
-        f = audio_dir / rel
+        f = audio_dir / row[cols["path"]]
         if not f.exists():
             continue
         try:
@@ -100,14 +87,76 @@ def main() -> int:
         if not row[cols["text"]].strip():
             continue
         per_speaker.setdefault(row[cols["speaker"]], []).append(
-            {"file": rel, "text": row[cols["text"]].strip(),
+            {"file": row[cols["path"]], "text": row[cols["text"]].strip(),
              "seconds": round(info.duration, 3), "sr": info.samplerate}
         )
+    return per_speaker
 
+
+def collect_from_hf_parquet(parquet_dir: Path, audio_dir: Path, exclude_source: str) -> dict[str, list[dict]]:
+    """Unpack HF 'Audio'-column parquet rows to real files + group by speaker.
+
+    The michaelodafe/pidgin-asr-combined schema (audio/text/duration/speaker_id/source)
+    is near-identical to the verified VoxCPM2 training format, so rows carry over
+    essentially 1:1 after the license audit (see --exclude-source).
+    """
+    import pyarrow.parquet as pq
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    per_speaker: dict[str, list[dict]] = {}
+    skipped_source = 0
+    for shard in sorted(Path(parquet_dir).rglob("*.parquet")):
+        table = pq.read_table(shard)
+        for row in table.to_pylist():
+            if exclude_source and (row.get("source") or "") == exclude_source:
+                skipped_source += 1
+                continue
+            text = (row.get("text") or "").strip()
+            audio = row.get("audio") or {}
+            blob = audio.get("bytes")
+            if not blob or not text:
+                continue
+            target_rel = (
+                f"{shard.stem}__{len(sum(per_speaker.values(), [])):06d}"
+                f"_{abs(hash(text)) % 10_000_000:08d}.wav"
+            )
+            target = audio_dir / target_rel
+            target.write_bytes(blob)
+            dur = row.get("duration") or 0.0
+            spk = (row.get("speaker_id") or "").strip() or f"hf-unknown-{shard.stem}"
+            per_speaker.setdefault(spk, []).append(
+                {"file": target_rel, "text": text, "seconds": round(float(dur), 3), "sr": 16000}
+            )
+    print(f"HF mode: skipped {skipped_source} clipped rows from excluded source '{exclude_source}'")
+    return per_speaker
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--tsv", help="Common Voice-style validated .tsv (mode 1)")
+    ap.add_argument("--hf-parquet-dir", help="local dir with dataset parquet shards (mode 2)")
+    ap.add_argument("--audio-dir", required=True, help="clips dir (mode 1) / unpack target (mode 2)")
+    ap.add_argument("--exclude-source", default="Rexe",
+                    help="skip rows whose source equals this (license audit; '' disables)")
+    ap.add_argument("--max-speakers", type=int, default=0, help="cap speakers (0 = all)")
+    args = ap.parse_args()
+
+    cfg = load_split_config()
+    audio_dir = Path(args.audio_dir)
+
+    if args.hf_parquet_dir:
+        per_speaker = collect_from_hf_parquet(Path(args.hf_parquet_dir), audio_dir, args.exclude_source)
+    elif args.tsv:
+        per_speaker = collect_from_tsv(args.tsv, audio_dir)
+    else:
+        ap.error("choose --tsv (mode 1) or --hf-parquet-dir (mode 2)")
+
+    seed = int(cfg["training"]["seed"])
+    r = random.Random(seed)
     speakers = sorted(per_speaker)
     r.shuffle(speakers)
     if args.max_speakers:
         speakers = speakers[: args.max_speakers]
+    print(f"speakers: {len(speakers)} | seed {seed}")
 
     fr = cfg["data"].get("split_fractions", {"train": 0.85, "val": 0.07, "test": 0.08})
     counts = [
@@ -121,24 +170,24 @@ def main() -> int:
     for spk, sp in zip(speakers, ["train"] * counts[0] + ["val"] * counts[1] + ["test"] * counts[2]):
         split_of[spk] = sp
 
-    out = {"train": [], "val": [], "test": []}
-    src = cfg["license"]["source_name"]
-    lic = cfg["license"]["license_id"]
+    out: dict[str, list[dict]] = {"train": [], "val": [], "test": []}
+    src_name = cfg["license"]["source_name"]
+    lic_id = cfg["license"]["license_id"]
     for spk in speakers:
         sp = split_of[spk]
-        for item in per_speaker[spk]:
+        for i, item in enumerate(per_speaker[spk]):
             out[sp].append({
-                "id": f"pcm-{spk}-{Path(item['file']).stem}",
+                "id": f"pcm-{spk}-{i:04d}",
                 "audio": str(audio_dir / item["file"]),
                 "duration": item["seconds"],
-                "text": item["text"],
                 "text": item["text"],
                 "speaker_id": spk,
                 "sampling_rate": item["sr"],
                 "language": "pcm",
-                "source": src,
-                "license": lic,
-                "approved_for_training": bool(cfg["license"].get("license_cleared", False)),
+                "source": src_name,
+                "license": lic_id,
+                "approved_for_training": bool(cfg["license"]["license_cleared"]
+                                              and cfg["license"]["consent_review_done"]),
             })
 
     outdir = REPO / "data" / "manifests"
@@ -149,11 +198,12 @@ def main() -> int:
             for rec in out[sp]:
                 fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
         hours = sum(x["duration"] for x in out[sp]) / 3600
-        print(f"pidgin_{sp}: {len(out[sp])} clips | ~{hours:.2f} h | {len({x['speaker_id'] for x in out[sp]})} speakers")
+        print(f"pidgin_{sp}: {len(out[sp])} clips | ~{hours:.2f} h | "
+              f"{len({x['speaker_id'] for x in out[sp]})} speakers")
 
     train_spk = {x["speaker_id"] for x in out["train"]}
-    test_spk = {x["speaker_id"] for x in out["test"]}
     val_spk = {x["speaker_id"] for x in out["val"]}
+    test_spk = {x["speaker_id"] for x in out["test"]}
     overlap = (train_spk & val_spk) | (train_spk & test_spk) | (val_spk & test_spk)
     assert not overlap, "speaker overlap detected — split failed sanity check"
     print("speaker overlap check: CLEAN")

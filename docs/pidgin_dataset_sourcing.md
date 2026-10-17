@@ -53,3 +53,37 @@ carry publisher licenses; none are scraped. (Task constraint honored — explici
   **record our own** (consent forms, PRD §8 wording) — slower, smaller, but clean.
 - No claim of "sounds Nigerian Pidgin" without human listening from ≥3 actual Pidgin
   speakers (hard constraint; PRD §5.5).
+
+---
+
+## Addendum v2 — route change (2026-10-17, reviewed with the working GPU session)
+
+**Discovery:** `mozilla-foundation/common_voice_25_0` does **not exist on Hugging Face**
+(404 with a valid token). Confirmed via HF author listing: since October 2025 Common Voice
+is distributed **exclusively through Mozilla Data Collective**; the HF CV 17.0/18.0 mirrors
+(`fsicoli/*`) were checked and contain **no pcm** language. The v1 plan's Stage 2 is unreachable.
+
+**New primary (chosen):** [`michaelodafe/pidgin-asr-combined`](https://huggingface.co/datasets/michaelodafe/pidgin-asr-combined)
+
+| Check | Result |
+|---|---|
+| License | CC-BY-4.0 (card); requires attribution + citation — recorded in config |
+| Provenance | academic release (Rufai et al. 2025, arXiv:2010.11123); voluntary recordings (LigAikuma, quiet settings), 10 native speakers 20–28, 5M/5F |
+| Domain | read-style news Pidgin (BBC News Pidgin texts) — matches the narration goal; card explicitly lists **TTS** as a suitable task |
+| Volume | 4,278 clips / ~8.56 h / 16 kHz mono WAV (after excluding 73 `Rexe`-source clips: license unspecified → **hard-excluded**) |
+| Schema | `audio` + `text` + `duration` + `speaker_id` — near-exact match to the VERIFIED VoxCPM2 fine-tune format |
+| Caveat A | upstream splits share speakers → **we rebuild speaker-disjoint splits ourselves** (builder does, 10 speakers → 8/1/1) |
+| Caveat B | ages 20–28, read-style only → no older/conversational/noisy Pidgin; noted as the next-iteration data gap |
+
+**Deferred:** Common Voice pcm via Data Collective (12.5 h / 59 speakers / CC0) stays the
+documented scale-up when a free Mozilla account + browser download is acceptable.
+**Deferred:** Naija-TTS-Dataset (NOODL-1.0) — review still pending, not needed for v0.
+
+**Consent posture recorded for sign-off (config flag `consent_review_done`):**
+voluntary in-app recordings · published academic release under CC-BY-4.0 · TTS explicitly
+listed as intended use · multi-speaker mixture (never single-voice cloning, no one
+identifiable voice) — PM to approve before `license_cleared`/`consent_review_done` flip.
+
+**Bonus for evaluation:** `michaelodafe/whisper-pidgin-v1` (trained on this exact data,
+published WER 21.37%) is a Pidgin-aware ASR → usable as the WER evaluator on the
+**speaker-disjoint test split only**.

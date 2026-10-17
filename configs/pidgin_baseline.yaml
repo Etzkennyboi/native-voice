@@ -18,16 +18,21 @@ tuned_weights:
   sample_rate: 48000
 
 data:
-  source_name: "Mozilla Common Voice 25.0 (pcm)"         # primary; NOODL secondary pending L2
-  license_id: "CC0-1.0"
+  source_name: "michaelodafe/pidgin-asr-combined"      # primary (route change v2, 2026-10-17)
+  source_upstream: "asr-nigerian-pidgin/nigerian-pidgin-1.0 (Rufai et al., arXiv:2010.11123)"
+  license_id: "CC-BY-4.0"
   language: "pcm"
+  hf_dataset: "michaelodafe/pidgin-asr-combined"
+  excluded_sources: ["Rexe"]   # 73 test-side clips, license unspecified → hard-excluded
   manifests_dir: "data/manifests"
-  expected_hours: 12.5
-  split_fractions:          # speaker-disjoint (script enforces; never utterance-level)
-    train: 0.85
-    val: 0.07
-    test: 0.08
-  splits_locked: false      # GATE: set true ONLY after schema verification cell passes
+  expected_hours: 8.56         # after Rexe exclusion ≈ 8.51 h (train 5.41 / val 1.37 / test 1.78 upstream)
+  note: "CV 25.0 pcm (12.5 h, 59 speakers) remains the scale-up option via Mozilla Data
+         Collective — reachable only with a browser account; see docs/pidgin_dataset_sourcing.md v2"
+  split_fractions:          # speaker-disjoint (builder enforces; 10 speakers → 8/1/1)
+    train: 0.8
+    val: 0.1
+    test: 0.1
+  splits_locked: false      # GATE: set true ONLY after license + consent review done
 
 training:
   # VERIFIED 2026-10-17 against the official VoxCPM2 recipe
@@ -64,12 +69,21 @@ evaluation:
     scale: "1-5 naturalness + 1-5 Pidgin authenticity"
 
 license:
-  # GATES (docs/pidgin_dataset_sourcing.md, items L1–L4). All must be true before
-  # scripts/build_pidgin_manifests.py or any training run will execute.
+  # ROUTE CHANGED 2026-10-17 (v2): primary is now the HF-hosted pidgin-asr-combined
+  # (CC-BY-4.0). Evidence base for the flags below:
+  #   - https://huggingface.co/datasets/michaelodafe/pidgin-asr-combined (card: license
+  #     cc-by-4.0, full source table + attribution/citation requirements, read this date)
+  #   - upstream https://huggingface.co/datasets/asr-nigerian-pidgin/nigerian-pidgin-1.0
+  #     (card: CC-BY-4.0, academic release, voluntary in-app recordings, TTS listed as a
+  #     supported task)
+  # Remaining review items before flags flip (L1'/L2'):
+  #   [ ] read the CC-BY-4.0 attribution terms on the card + cite requirements (done-read flag)
+  #   [ ] consent scope check: voluntary recordings, published academic release, TTS-use
+  #       explicitly supported, multi-speaker mixture → recorded here for the sign-off
+  source_name: "michaelodafe/pidgin-asr-combined"
+  license_id: "CC-BY-4.0"
   license_cleared: false
-  source_name: "Mozilla Common Voice 25.0 (pcm)"
-  license_id: "CC0-1.0"
-  consent_review_done: false            # Mozilla ToS covers generative speech training — confirm
+  consent_review_done: false
   # L3 CLEARED 2026-10-17: base checkpoint is Apache-2.0 — evidence:
   #   - https://huggingface.co/openbmb/VoxCPM2 (model card: license apache-2.0,
   #     "Fully Open-Source & Commercial-Ready", fine-tuning officially supported)
@@ -78,5 +92,8 @@ license:
 
 # Owner decisions recorded 2026-10-17 (Emmanuel / PM sign-off):
 decisions:
-  dataset_route: "CV pcm only — Naija-TTS deferred pending L2 (NOODL-1.0 review)"
+  dataset_route: "v2: pidgin-asr-combined (CC-BY-4.0, HF-hosted). v1 was CV pcm —
+                  moved 2026-10-17 because mozilla-foundation/common_voice_25_0 does
+                  NOT exist on HF (Data-Collective-only) and the CV 17/18 HF mirrors
+                  verified to lack pcm; Data Collective route documented as scale-up."
   compute: "feasibility probe on free T4; full fine-tune on paid A100 (~15-25 h est., re-estimate after Stage 4)"
