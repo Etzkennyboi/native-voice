@@ -101,13 +101,16 @@ def collect_from_hf_parquet(parquet_dir: Path, audio_dir: Path, exclude_source: 
     essentially 1:1 after the license audit (see --exclude-source).
     """
     import pyarrow.parquet as pq
+    from collections import Counter
     audio_dir.mkdir(parents=True, exist_ok=True)
     per_speaker: dict[str, list[dict]] = {}
     skipped_source = 0
+    sources = Counter()
     for shard in sorted(Path(parquet_dir).rglob("*.parquet")):
         table = pq.read_table(shard)
         for row in table.to_pylist():
-            if exclude_source and (row.get("source") or "") == exclude_source:
+            sources[(row.get("source") or "missing") + ""] += 1
+            if exclude_source and exclude_source.lower() in (row.get("source") or "").lower():
                 skipped_source += 1
                 continue
             text = (row.get("text") or "").strip()
@@ -126,7 +129,9 @@ def collect_from_hf_parquet(parquet_dir: Path, audio_dir: Path, exclude_source: 
             per_speaker.setdefault(spk, []).append(
                 {"file": target_rel, "text": text, "seconds": round(float(dur), 3), "sr": 16000}
             )
-    print(f"HF mode: skipped {skipped_source} clipped rows from excluded source '{exclude_source}'")
+    print(f"HF mode: hard-excluded {skipped_source} rows matching license-unknown source "
+          f"pattern '{exclude_source}'")
+    print("distinct sources seen:", dict(sources))
     return per_speaker
 
 
@@ -156,16 +161,20 @@ def main() -> int:
     r.shuffle(speakers)
     if args.max_speakers:
         speakers = speakers[: args.max_speakers]
-    print(f"speakers: {len(speakers)} | seed {seed}")
+    print(f"speaker-ID groups: {len(speakers)} | seed {seed}")
+    print("note: IDs are treated as recording-session-level pseudo-speakers "
+          "(upstream card says IDs may not map 1:1 to real speakers); "
+          "group-level disjointness still guarantees zero utterance overlap — "
+          "true speaker-disjointness must be assumed per upstream paper only")
 
-    fr = cfg["data"].get("split_fractions", {"train": 0.85, "val": 0.07, "test": 0.08})
-    counts = [
-        max(1, int(len(speakers) * fr["train"])),
-        max(1, int(len(speakers) * fr["val"])),
-        max(1, int(len(speakers) * fr["test"])),
-    ]
-    while sum(counts) > len(speakers) and counts[0] > 1:
-        counts[0] -= 1
+    fr = cfg["data"].get("split_fractions", {"train": 0.8, "val": 0.1, "test": 0.1})
+    va_n = max(1, int(len(speakers) * fr["val"]))
+    te_n = max(1, int(len(speakers) * fr["test"]))
+    if len(speakers) < va_n + te_n + 2:   # tiny pools: at least 2 speakers for train
+        te_n = 1
+        va_n = 1
+    tr_n = max(1, len(speakers) - va_n - te_n)   # remainder → train (never truncates)
+    counts = [tr_n, va_n, te_n]
     split_of = {}
     for spk, sp in zip(speakers, ["train"] * counts[0] + ["val"] * counts[1] + ["test"] * counts[2]):
         split_of[spk] = sp
