@@ -57,3 +57,8 @@ license:
   license_id: "CC0-1.0"
   consent_review_done: false            # Mozilla ToS covers generative speech training — confirm
   base_checkpoint_license_ok: false     # L3: VoxCPM2 license permits derivative fine-tuning
+
+# Owner decisions recorded 2026-10-17 (Emmanuel / PM sign-off):
+decisions:
+  dataset_route: "CV pcm only — Naija-TTS deferred pending L2 (NOODL-1.0 review)"
+  compute: "feasibility probe on free T4; full fine-tune on paid A100 (~15-25 h est., re-estimate after Stage 4)"
