@@ -30,15 +30,29 @@ data:
   splits_locked: false      # GATE: set true ONLY after schema verification cell passes
 
 training:
-  method: "lora"            # LoRA hooks confirmed present in voxcpm 2.0.3 API surface;
-                            # full-SFT feasibility unverified — do not improvise.
+  # VERIFIED 2026-10-17 against the official VoxCPM2 recipe
+  # (OpenBMB/VoxCPM conf/voxcpm_v2/voxcpm_finetune_lora.yaml — values copied, not guessed).
+  # Driver: python scripts/train_voxcpm_finetune.py --config_path <this-style yaml>
+  # (driver itself fetched from OpenBMB/VoxCPM on the runtime; LoRA needs only
+  # 5-10 min of audio per official README — our 12.5 h is ample).
+  method: "lora"
   seed: 3407
-  lora:
-    r: 16
-    alpha: 32
-    dropout: 0.05
+  sample_rate: 16000        # AudioVAE encoder input rate during training; output stays 48k
+  batch_size: 2
+  grad_accum_steps: 8       # effective batch = 16
+  num_iters: 1000           # official default; feasibility probe uses 50
   learning_rate: 1.0e-4
-  epochs: 1                 # first full run conservative; revisit after feasibility cell
+  weight_decay: 0.01
+  warmup_steps: 100
+  max_grad_norm: 1.0
+  max_batch_tokens: 8192
+  lora:
+    r: 32
+    alpha: 32
+    dropout: 0.0
+    enable_lm: true
+    enable_dit: true
+    enable_proj: false
   inference_timesteps: 10   # eval/generation settings mirror baseline for fair A/B
   cfg_value: 2.0
 
@@ -56,7 +70,11 @@ license:
   source_name: "Mozilla Common Voice 25.0 (pcm)"
   license_id: "CC0-1.0"
   consent_review_done: false            # Mozilla ToS covers generative speech training — confirm
-  base_checkpoint_license_ok: false     # L3: VoxCPM2 license permits derivative fine-tuning
+  # L3 CLEARED 2026-10-17: base checkpoint is Apache-2.0 — evidence:
+  #   - https://huggingface.co/openbmb/VoxCPM2 (model card: license apache-2.0,
+  #     "Fully Open-Source & Commercial-Ready", fine-tuning officially supported)
+  #   - https://github.com/OpenBMB/VoxCPM LICENSE (full Apache-2.0 text, fetched)
+  base_checkpoint_license_ok: true
 
 # Owner decisions recorded 2026-10-17 (Emmanuel / PM sign-off):
 decisions:

@@ -4,9 +4,9 @@
 HARD GATES — the script refuses to run until both are satisfied:
   1. License: configs/pidgin_baseline.yaml must mark the source dataset as
      license_cleared: true (done only after the licence text has actually been read, PRD §8).
-  2. Schema: the manifest field names must match what VoxCPM2's fine-tuning pipeline
-     expects. That is verified in notebooks/03_pidgin_finetune.ipynb (zero-GPU
-     introspection cell) — then SCHEMA_KEYS below is updated. We never assume.
+  2. Schema: VERIFIED 2026-10-17 — official VoxCPM2 training format is
+     {"audio": <path>, "text": <str>} (+optional "duration"/"dataset_id"); this script
+     emits exactly that (see note below).
 
 Input format: Common Voice-style validated TSV (auto-detects the
 path/sentence/speaker columns), plus the audio directory the `path` column refers to.
@@ -31,17 +31,12 @@ import yaml
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-# Placeholder pending the verification cell — DO NOT assume these match VoxCPM2.
-# Until verified, manifests use THIS repo's canonical schema (PRD §8 fields);
-# after notebooks/03 introspection, either rename keys here or add an adapter that
-# re-emits them in VoxCPM2's exact fine-tune format.
-SCHEMA_KEYS = {
-    "audio_path": "audio_path",   # UNVERIFIED — check against VoxCPM2 fine-tune schema
-    "text": "text",               # UNVERIFIED
-    "speaker_id": "speaker_id",   # UNVERIFIED
-}
-
-
+# VERIFIED 2026-10-17 against the official VoxCPM2 fine-tune format
+# (OpenBMB/VoxCPM examples/train_data_example.jsonl + src/voxcpm/training/data.py):
+#   required: "audio" (path — absolute or relative), "text"
+#   optional: "duration" (seconds — lets length filtering skip audio loading),
+#             "dataset_id" (int). Extra metadata columns are ignored by the loader.
+#   Loader casts audio to 16 kHz itself — no client-side resampling needed.
 def load_split_config() -> dict:
     path = REPO / "configs" / "pidgin_baseline.yaml"
     with open(path, encoding="utf-8") as fh:
@@ -134,10 +129,11 @@ def main() -> int:
         for item in per_speaker[spk]:
             out[sp].append({
                 "id": f"pcm-{spk}-{Path(item['file']).stem}",
-                "audio_path": str(audio_dir / item["file"]),
+                "audio": str(audio_dir / item["file"]),
+                "duration": item["seconds"],
+                "text": item["text"],
                 "text": item["text"],
                 "speaker_id": spk,
-                "duration_s": item["seconds"],
                 "sampling_rate": item["sr"],
                 "language": "pcm",
                 "source": src,
@@ -152,7 +148,7 @@ def main() -> int:
         with open(target, "w", encoding="utf-8") as fh:
             for rec in out[sp]:
                 fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
-        hours = sum(x["duration_s"] for x in out[sp]) / 3600
+        hours = sum(x["duration"] for x in out[sp]) / 3600
         print(f"pidgin_{sp}: {len(out[sp])} clips | ~{hours:.2f} h | {len({x['speaker_id'] for x in out[sp]})} speakers")
 
     train_spk = {x["speaker_id"] for x in out["train"]}
