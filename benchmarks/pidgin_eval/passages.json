@@ -1,0 +1,29 @@
+{
+  "version": "pidgin-benchmark-v0",
+  "purpose": "Phase 3 A/B evaluation set — Pidgin-tuned checkpoint vs untouched English baseline. Same text, same generation settings (timesteps 10, cfg 2.0), only the weights differ.",
+  "protocol": "benchmarks/pidgin_eval/README.md",
+  "orthography_note": "Contemporary Nigerian Pidgin orthography (e.g. 'dey', 'im', 'una', 'wetin'). Transcripts are NOT corrected toward Standard English — task constraint.",
+  "passages": [
+    {"id": "pidgin-001", "style": "conversational", "text": "Wetin dey happen? I don wait for you since morning, and you no even call to tell me say you dey come late."},
+    {"id": "pidgin-002", "style": "conversational", "text": "Abeg, no vex. Traffic for Third Mainland bridge no let me comot on time. Tomorrow I go reach here before eight."},
+    {"id": "pidgin-003", "style": "narrative", "text": "Dat year, rai dey cheap well well. My papa go market every Saturday go buy two baskets, and mama go cook am with palm oil small small."},
+    {"id": "pidgin-004", "style": "narrative", "text": "Di old man talk say di river get spirit, so nobody no dey swim for inside when moon full. Everybody for village believe am."},
+    {"id": "pidgin-005", "style": "news-broadcast", "text": "Good evening. Di federal government don announce new fuel price wey go start next week. Make una listen to di full details."},
+    {"id": "pidgin-006", "style": "news-broadcast", "text": "Weather report: rain go fall for Lagos and Port Harcourt today, but Kano go dry and sun go strong. Drive carefully."},
+    {"id": "pidgin-007", "style": "code-switch-english", "text": "My manager talk say di project deadline na next Monday, so make we hustle finish di report before Friday close of business."},
+    {"id": "pidgin-008", "style": "code-switch-english", "text": "I don send you di invoice already. Check your email, and if you get any question, just call my office line anytime."},
+    {"id": "pidgin-009", "style": "proverb-wisdom", "text": "As our papa dem dey talk: monkey no fine, but im mama like am. Every pikin get im own value for dis life."},
+    {"id": "pidgin-010", "style": "proverb-wisdom", "text": "Person wey no sabi say thank you for small thing, no go ever see big thing. Humility na di beginning of wisdom."},
+    {"id": "pidgin-011", "style": "food-market", "text": "Aunty, how much be dis tomato? E too cost o! Abeg reduce price make I buy four, I get pikin dem for house."},
+    {"id": "pidgin-012", "style": "food-market", "text": "Di jollof rice for dat buka sweet no be small. Add small pepper, dodo, and one piece of chicken — na two thousand naira."},
+    {"id": "pidgin-013", "style": "travel-directions", "text": "Enter danfo go Oshodi, drop for di second roundabout. From there, take okada tell am say you dey go Saraki street behind di bank."},
+    {"id": "pidgin-014", "style": "travel-directions", "text": "Di bus no dey pass dis road after seven o'clock. If you late, you go need take keke go junction, then trek small."},
+    {"id": "pidgin-015", "style": "urgent-safety", "text": "Emergency! Di house next door dey burn! Call fire service quick quick, and make everybody comot from di building now now!"},
+    {"id": "pidgin-016", "style": "urgent-safety", "text": "No walk for dis road at night again. Three robbery happen here last month. Abeg take di main road, even if e longer."},
+    {"id": "pidgin-017", "style": "numbers-money", "text": "Di total na forty-five thousand six hundred naira. I go pay twenty thousand now, then balance fifteen go follow next week salary."},
+    {"id": "pidgin-018", "style": "names-titles", "text": "Oga Emeka, Madam Ngozi don arrive with Chief Balogun dem. Dem dey wait for you for di conference room upstairs."},
+    {"id": "pidgin-019", "style": "conversational-humor", "text": "You see dat film wey dey trend? Di ending surprise me no be small — I no expect say na di driver be di thief!"},
+    {"id": "pidgin-020", "style": "narrative-code-switch", "text": "Last weekend we go party for Surulere. DJ play afrobeats till morning, and everybody dey dance shaku shaku like say tomorrow no dey."}
+  ],
+  "pidgin_specific_probe_words": ["wetin", "dey", "una", "abi", "sabi", "wahala", "japa", "chop", "comot", "vex", "pikin", "oga", "abeg", "danfo", "okada", "buka", "dodo", "keke"]
+}

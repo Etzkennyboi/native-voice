@@ -1,0 +1,59 @@
+# Phase 3 adapted scope: Nigerian Pidgin (pcm) fine-tuning variant.
+# ISOLATION RULE: nothing in this file modifies configs/baseline.yaml — the
+# general-English checkpoint stays pinned and untouched (task constraint).
+
+variant: "pidgin-v0"
+checkpoint_id: "voxcpm2-pidgin-v0"          # distinct id; baseline keeps checkpoint_id voxcpm2
+
+base_model:
+  hf_model_id: "openbmb/VoxCPM2"
+  revision: "32279effe8c19989596f05d353d1447f51d9e915"   # pinned snapshot, identical to baseline
+  load_denoiser: true
+  zipenhancer_model_id: "iic/speech_zipenhancer_ans_multiloss_16k_base"
+  optimize: true
+
+tuned_weights:
+  # Filled by the fine-tuning notebook; empty = run the pure baseline.
+  lora_weights_path: ""
+  sample_rate: 48000
+
+data:
+  source_name: "Mozilla Common Voice 25.0 (pcm)"         # primary; NOODL secondary pending L2
+  license_id: "CC0-1.0"
+  language: "pcm"
+  manifests_dir: "data/manifests"
+  expected_hours: 12.5
+  split_fractions:          # speaker-disjoint (script enforces; never utterance-level)
+    train: 0.85
+    val: 0.07
+    test: 0.08
+  splits_locked: false      # GATE: set true ONLY after schema verification cell passes
+
+training:
+  method: "lora"            # LoRA hooks confirmed present in voxcpm 2.0.3 API surface;
+                            # full-SFT feasibility unverified — do not improvise.
+  seed: 3407
+  lora:
+    r: 16
+    alpha: 32
+    dropout: 0.05
+  learning_rate: 1.0e-4
+  epochs: 1                 # first full run conservative; revisit after feasibility cell
+  inference_timesteps: 10   # eval/generation settings mirror baseline for fair A/B
+  cfg_value: 2.0
+
+evaluation:
+  benchmark_passages: "benchmarks/pidgin_eval/passages.json"
+  wer_recognizer: "facebook/mms-1b-all (pcm) — CC-BY-NC, research use only"  # placeholder; verify
+  human_eval:
+    min_speakers: 3         # hard constraint: real Pidgin speakers, PRD §5.5
+    scale: "1-5 naturalness + 1-5 Pidgin authenticity"
+
+license:
+  # GATES (docs/pidgin_dataset_sourcing.md, items L1–L4). All must be true before
+  # scripts/build_pidgin_manifests.py or any training run will execute.
+  license_cleared: false
+  source_name: "Mozilla Common Voice 25.0 (pcm)"
+  license_id: "CC0-1.0"
+  consent_review_done: false            # Mozilla ToS covers generative speech training — confirm
+  base_checkpoint_license_ok: false     # L3: VoxCPM2 license permits derivative fine-tuning
