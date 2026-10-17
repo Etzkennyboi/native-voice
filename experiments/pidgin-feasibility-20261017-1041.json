@@ -1,0 +1,14 @@
+{
+  "stage": "pidgin_feasibility_bf16",
+  "date": "2026-10-17",
+  "seed": 3407,
+  "num_iters": 50,
+  "clips": 40,
+  "batch": "1x16",
+  "max_batch_tokens": 2048,
+  "weights_dtype": "bfloat16 (t4 patch)",
+  "driver_returncode": 1,
+  "train_wall_s": 71.6,
+  "gpu_peak_mib": 5043,
+  "gpu": "Tesla T4"
+}

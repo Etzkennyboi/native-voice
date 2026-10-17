@@ -1,0 +1,12 @@
+{
+  "stage": "pidgin_feasibility_c",
+  "date": "2026-10-17",
+  "seed": 3407,
+  "num_iters": 50,
+  "clips": 40,
+  "batch": "1x16",
+  "max_batch_tokens": 2048,
+  "driver_returncode": 1,
+  "train_wall_s": 72.3,
+  "gpu": "Tesla T4"
+}

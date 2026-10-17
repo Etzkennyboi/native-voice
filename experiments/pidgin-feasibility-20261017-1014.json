@@ -1,0 +1,11 @@
+{
+  "stage": "pidgin_feasibility",
+  "date": "2026-10-17",
+  "seed": 3407,
+  "num_iters": 50,
+  "clips": 40,
+  "driver_returncode": 1,
+  "train_wall_s": 104.4,
+  "vram_peak_gib": 0.0,
+  "gpu": "Tesla T4"
+}

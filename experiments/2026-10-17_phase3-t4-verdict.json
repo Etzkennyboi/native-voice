@@ -1,0 +1,35 @@
+{
+  "stage": "pidgin_feasibility_t4_verdict",
+  "date": "2026-10-17",
+  "gpu": "Tesla T4 (14.56 GiB)",
+  "verdict": "INSUFFICIENT",
+  "evidence": [
+    {
+      "run": "official fp32 path, batch 1x16, max_batch_tokens 2048",
+      "oom": true,
+      "gpu_allocated_at_oom_mib": 14392,
+      "notes": "20 MiB short; batch already at configured floor; identical site across 2 runs"
+    },
+    {
+      "run": "patch v3 (bf16 body + fp32 master LoRA, VM-only)",
+      "oom": false,
+      "gpu_peak_mib": 6879,
+      "notes": "GPU stage fits with ~7.7 GiB headroom"
+    },
+    {
+      "run": "host-RAM forensics (2x SIGKILL -9 at load phase)",
+      "colab_host_ram_mib": 13043,
+      "child_rss_peak_mib": 10840,
+      "sys_avail_before_start_mib": 11429,
+      "sys_avail_at_33s_mib": 2911,
+      "notes": "loader CPU stage peaks ~12+ GB; free Colab host floor ~12.7 GB; killed twice at same spot"
+    }
+  ],
+  "patch_history": [
+    "v1: whole-model bf16 cast -> AudioVAE dtype mismatch (fp32 inputs, bf16 bias)",
+    "v2: VAE restored fp32 -> AMP GradScaler cannot unscale bf16 grads",
+    "v3: trainable LoRA in fp32 master -> GPU fits; host-RAM OOM killer during load"
+  ],
+  "conclusion": "Two independent T4 ceilings: (1) official training path needs ~15+ GiB GPU; (2) model load exceeds free Colab host RAM even with the GPU fixed. Production run = paid A100 with the OFFICIAL unpatched fp32 path. Patch v3 recorded as feasibility evidence only, never for the production model.",
+  "probe_gpu_spend_s": 492
+}
