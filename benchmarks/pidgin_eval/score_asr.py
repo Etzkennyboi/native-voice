@@ -58,10 +58,16 @@ def read_wav16k(path: Path) -> np.ndarray:
     if data.ndim > 1:
         data = data.mean(axis=1)
     if sr != 16000:
-        import torch
-        import torchaudio
-        data = torchaudio.functional.resample(
-            torch.from_numpy(data), sr, 16000).numpy()
+        try:
+            import torch
+            import torchaudio
+            data = torchaudio.functional.resample(
+                torch.from_numpy(data), sr, 16000).numpy()
+        except Exception:
+            from math import gcd
+            from scipy.signal import resample_poly
+            step = gcd(sr, 16000)
+            data = resample_poly(data, 16000 // step, sr // step).astype("float32")
     return data
 
 
