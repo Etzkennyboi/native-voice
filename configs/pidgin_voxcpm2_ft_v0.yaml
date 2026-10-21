@@ -1,0 +1,35 @@
+# Phase 3 full-run recipe — harvested verbatim from the VM at step 1000 (2026-10-21).
+# Run record: experiments/2026-10-21_phase3-fullrun-complete.md
+# Executed with VM-only patch v4 numerics; paths below are Colab VM paths.
+pretrained_path: /root/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/32279effe8c19989596f05d353d1447f51d9e915
+train_manifest: data/manifests/pidgin_train.jsonl
+val_manifest: data/manifests/pidgin_val.jsonl
+sample_rate: 16000
+out_sample_rate: 48000
+batch_size: 1
+grad_accum_steps: 16
+num_workers: 2
+preprocessing_num_workers: 2
+num_iters: 1000
+max_steps: 1000
+warmup_steps: 100
+log_interval: 10
+valid_interval: 1000
+save_interval: 250
+learning_rate: 0.0001
+weight_decay: 0.01
+max_batch_tokens: 2048
+max_grad_norm: 1.0
+save_path: /content/artifacts/pidgin-v0
+tensorboard: /content/logs/pidgin-v0
+lambdas:
+  loss/diff: 1.0
+  loss/stop: 1.0
+lora:
+  r: 32
+  alpha: 32
+  dropout: 0.0
+  enable_lm: true
+  enable_dit: true
+  enable_proj: false
+hf_model_id: openbmb/VoxCPM2

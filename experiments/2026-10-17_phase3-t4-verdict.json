@@ -3,6 +3,12 @@
   "date": "2026-10-17",
   "gpu": "Tesla T4 (14.56 GiB)",
   "verdict": "INSUFFICIENT",
+  "superseded": true,
+  "superseded_by": [
+    "experiments/2026-10-17_phase3-probe-completion.md",
+    "experiments/2026-10-21_phase3-fullrun-complete.md"
+  ],
+  "superseded_note": "Both ceilings refuted under VM-only patch v4 on the same free T4; production run reached step 1000. Original verdict retained unchanged.",
   "evidence": [
     {
       "run": "official fp32 path, batch 1x16, max_batch_tokens 2048",

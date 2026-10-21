@@ -1,0 +1,68 @@
+{
+  "stage": "phase3_fullrun_complete",
+  "date": "2026-10-21",
+  "checkpoint_id": "voxcpm2-pidgin-v0",
+  "status": "COMPLETE",
+  "step": 1000,
+  "base_model": {
+    "hf_model_id": "openbmb/VoxCPM2",
+    "revision": "32279effe8c19989596f05d353d1447f51d9e915"
+  },
+  "gpu": "Tesla T4 (15360 MiB), free Colab",
+  "cost_usd": 0,
+  "recipe_config": "configs/pidgin_voxcpm2_ft_v0.yaml",
+  "numerics": {
+    "official": false,
+    "deviation": "patch v4 (VM-only): bf16 default-dtype construction, fp32 LoRA master, fp32 AudioVAE; marker ntv-t4-v4",
+    "archive": "Drive naturalvoice-ai-phase3/feasibility-20261017/env-snapshot/voxcpm2_patched_v4.py",
+    "quality_gate": "human A/B (Phase 4)"
+  },
+  "data": {
+    "source": "michaelodafe/pidgin-asr-combined",
+    "license": "CC-BY-4.0",
+    "attribution": "Rufai et al. (arXiv:2010.11123) + Odafe 2026",
+    "excluded_sources": ["Rexe"],
+    "seed": 3407,
+    "manifests": {
+      "train": {"rows": 3662, "sha256": "93f71d328fd2e79f4bb0873e8c8b292b033000133879e1258a4f7a2cccc531ad"},
+      "val": {"rows": 283, "sha256": "c738378e762aa05893ee72319215f77181d2ba1aaf6d38aa5c99401799317198"},
+      "test": {"rows": 332, "sha256": "cf15fe9f1baf170b5e4b7ad13cc7d40c3c0418559c6cea36284ff6d498f34517"}
+    }
+  },
+  "final_metrics": {
+    "step_990": {"loss_diff": 0.952096, "loss_stop": 0.062836, "grad_norm": 0.102207},
+    "step_999": {"loss_diff": 0.884200, "loss_stop": 0.027900, "grad_norm": 0.095988},
+    "lr": 0.0,
+    "epoch": 4.364828,
+    "flag": "loss/diff plateaued ~0.85-0.95; not evidence of quality"
+  },
+  "artifacts": {
+    "location": "Drive MyDrive/naturalvoice-ai-phase3/voxcpm2-pidgin-v0",
+    "completed_at_vm_clock": "2026-10-21T22:54:39",
+    "lora_weights": {
+      "file": "lora_weights.safetensors",
+      "size_mib": 69.04,
+      "sha256": "edd8a79adbf134d989d5112b05c4d48411b7d50e8398263059691a949b13f9a7"
+    },
+    "optimizer": {"file": "optimizer.pth", "size_mib": 138.31},
+    "latest_equals_step_1000": true,
+    "checkpoints_present": ["step_0000000", "step_0000250", "step_0000500", "step_0000750", "step_0000999", "step_0001000"]
+  },
+  "smoke": {
+    "functional_only": true,
+    "loaded_lora_params": 384,
+    "skipped": 0,
+    "sample_rate": 48000,
+    "duration_s": 2.4,
+    "peak": 0.231,
+    "sample_path": "Drive naturalvoice-ai-phase3/voxcpm2-pidgin-v0/smoke/gen_step1000.wav"
+  },
+  "environment": {
+    "voxcpm_version": "2.0.3",
+    "openbmb_head": "cce58a5b59303c9bd63d12f23afe6a49a4a80c59",
+    "python": "3.13",
+    "env_snapshot": "Drive naturalvoice-ai-phase3/feasibility-20261017/env-snapshot/env.json"
+  },
+  "supersedes": ["experiments/2026-10-17_phase3-t4-verdict.md"],
+  "next": "Phase 4 A/B evaluation (benchmarks/pidgin_eval/README.md)"
+}

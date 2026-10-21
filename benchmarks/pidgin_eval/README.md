@@ -6,6 +6,14 @@ Untouched English baseline (`configs/baseline.yaml`, snapshot
 `32279effe8c19989596f05d353d1447f51d9e915`) **vs** Pidgin-tuned checkpoint
 (`configs/pidgin_baseline.yaml`, checkpoint_id `voxcpm2-pidgin-v0`).
 
+Artifact under test: `voxcpm2-pidgin-v0`, step 1000, harvested 2026-10-21
+(`lora_weights.safetensors` sha256 `edd8a79adbf134d989d5112b05c4d48411b7d50e8398263059691a949b13f9a7`,
+69.04 MiB). Stored (not committed) at Colab Drive
+`MyDrive/naturalvoice-ai-phase3/voxcpm2-pidgin-v0/`; pass that directory as
+`lora_weights_path` (it contains `lora_config.json`; smoke loaded 384 LoRA
+parameters, 0 skipped). Full run record:
+`experiments/2026-10-21_phase3-fullrun-complete.md`.
+
 Same 20 passages (`passages.json`), same generation settings
 (`inference_timesteps: 10`, `cfg_value: 2.0`, seed fixed), only weights differ.
 No improvement may be claimed without this A/B (task constraint).
