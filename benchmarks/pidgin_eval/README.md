@@ -58,14 +58,27 @@ git clone https://github.com/OpenBMB/VoxCPM /content/OpenBMB-VoxCPM
 git -C /content/OpenBMB-VoxCPM checkout cce58a5b59303c9bd63d12f23afe6a49a4a80c59
 ```
 
-1. Blind stimuli (25 passages × 2 systems; resumable with `--skip-existing`):
+**Host-RAM guard (required):** the stock loader builds the model in fp32
+(~8 GB), casts to bf16 (+4 GB) and loads a ~5 GB state dict — a ~16 GB peak that
+kills free Colab (~12.7 GB). Restore the VM-only patch v4 (bf16 construction)
+into the clone; it is archived on Drive:
 
 ```bash
-python benchmarks/pidgin_eval/generate_stimuli.py \
-  --out /content/drive/MyDrive/naturalvoice-ai-phase3/eval-YYYYMMDD \
-  --artifact /content/drive/MyDrive/naturalvoice-ai-phase3/voxcpm2-pidgin-v0 \
-  --skip-existing
+cp /content/drive/MyDrive/naturalvoice-ai-phase3/feasibility-20261017/env-snapshot/voxcpm2_patched_v4.py \
+   /content/OpenBMB-VoxCPM/src/voxcpm/model/voxcpm2.py
+grep -q ntv-t4-v4 /content/OpenBMB-VoxCPM/src/voxcpm/model/voxcpm2.py && echo "patch v4 OK"
 ```
+
+1. Blind stimuli — one process per system, then finalize (resumable):
+
+```bash
+python benchmarks/pidgin_eval/generate_stimuli.py --out <eval-dir> --artifact <artifact> --system baseline
+python benchmarks/pidgin_eval/generate_stimuli.py --out <eval-dir> --artifact <artifact> --system tuned
+python benchmarks/pidgin_eval/generate_stimuli.py --out <eval-dir> --artifact <artifact> --finalize
+```
+
+   Quick load smoke: add `--limit 1` to the first two commands (the full run
+   reuses those clips via `--skip-existing`). Expect `[mem] after load` ≈ 9 GB.
 
 2. Automatic WER (indication only — flagged):
 

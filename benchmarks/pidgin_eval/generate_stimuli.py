@@ -2,19 +2,24 @@
 """Phase 4 stimulus generator — blind A/B: untouched baseline vs voxcpm2-pidgin-v0.
 
 Generates the 20 Pidgin passages and the 5 English regression passages with both
-systems (sequential model loads to stay inside T4 VRAM), then renames outputs to
-blind A/B letters per passage and writes the mapping to key.json.
+systems, then renames outputs to blind A/B letters per passage and writes the
+mapping to key.json.
 
-Protocol: benchmarks/pidgin_eval/README.md
-Settings mirror the app/production path: style token "(documentary)" (override
-with --style ""), cfg 2.0, timesteps 10, seed 3407. Only the weights differ.
+HOST-RAM NOTE: the stock loader builds the model in fp32 (~8 GB), casts to bf16
+(+4 GB) and loads a ~5 GB state dict — a ~16 GB peak that kills free Colab
+(~12.7 GB). Run this on a clone with the VM-only patch v4 (bf16 construction)
+restored; the smoke on that loader loaded 384 LoRA params and generated audio.
+
+PROCESS NOTE: run one system per process (--system baseline / --system tuned)
+then --finalize, so the OS reclaims host memory between model loads.
 
 Usage (Colab, repo root):
-    python benchmarks/pidgin_eval/generate_stimuli.py \
-        --out /content/drive/MyDrive/naturalvoice-ai-phase3/eval-20261022 \
-        --artifact /content/drive/MyDrive/naturalvoice-ai-phase3/voxcpm2-pidgin-v0
+    python benchmarks/pidgin_eval/generate_stimuli.py --out <eval-dir> --artifact <artifact> --system baseline
+    python benchmarks/pidgin_eval/generate_stimuli.py --out <eval-dir> --artifact <artifact> --system tuned
+    python benchmarks/pidgin_eval/generate_stimuli.py --out <eval-dir> --artifact <artifact> --finalize
 
-Resumable: --skip-existing reuses already-generated wavs.
+Resumable: --skip-existing reuses already-generated wavs. --limit N generates
+only the first N passages per set (load smoke test; disable before --finalize).
 """
 from __future__ import annotations
 
@@ -24,6 +29,7 @@ import hashlib
 import json
 import os
 import random
+import resource
 import shutil
 import subprocess
 import sys
@@ -80,7 +86,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=3407)
     p.add_argument("--timesteps", type=int, default=10)
     p.add_argument("--cfg", type=float, default=2.0)
-    p.add_argument("--only", choices=["all", "pidgin", "english"], default="all")
+    p.add_argument("--system", choices=["all", "baseline", "tuned"], default="all")
+    p.add_argument("--finalize", action="store_true",
+                   help="only do blind mapping + listener assets + manifest")
+    p.add_argument("--limit", type=int, default=0,
+                   help="generate only the first N passages per set (load smoke test)")
     p.add_argument("--skip-existing", action="store_true")
     return p.parse_args()
 
@@ -99,6 +109,17 @@ def repo_commit() -> str:
                               capture_output=True, text=True, check=True).stdout.strip()
     except Exception:
         return "unknown"
+
+
+def maxrss_gb() -> float:
+    try:
+        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 ** 2
+    except Exception:
+        return float("nan")
+
+
+def mem(label: str) -> None:
+    print(f"[mem] {label}: max RSS {maxrss_gb():.2f} GB", flush=True)
 
 
 def load_voxcpm():
@@ -133,10 +154,10 @@ def flatten(wav) -> np.ndarray:
 def generate_set(model, items, style, seed, timesteps, cfg, out_dir: Path,
                  skip_existing: bool) -> int:
     sr = model_sample_rate(model)
-    for item in items:
+    for index, item in enumerate(items, 1):
         dst = out_dir / f"{item['id']}.wav"
         if skip_existing and dst.is_file():
-            print(f"[skip] {dst.name}")
+            print(f"[skip] {dst.name}", flush=True)
             continue
         text = f"({style}){item['text']}" if style else item["text"]
         t0 = time.time()
@@ -147,7 +168,9 @@ def generate_set(model, items, style, seed, timesteps, cfg, out_dir: Path,
         out_dir.mkdir(parents=True, exist_ok=True)
         sf.write(str(dst), wav, sr, subtype="PCM_16")
         print(f"[gen] {dst.name}: {wav.size / sr:.2f}s @ {sr} Hz "
-              f"in {time.time() - t0:.1f}s (peak {abs(wav).max():.3f})")
+              f"in {time.time() - t0:.1f}s (peak {abs(wav).max():.3f})", flush=True)
+        if index % 5 == 0:
+            mem(f"after {index} clips")
     return sr
 
 
@@ -162,7 +185,7 @@ def blind_map(items, seed, tmp_root: Path, src_set: str, dst_dir: Path) -> dict:
         for letter, system in systems.items():
             src = tmp_root / system / src_set / f"{item['id']}.wav"
             if not src.is_file():
-                raise FileNotFoundError(f"missing {src} — generation incomplete")
+                raise FileNotFoundError(f"missing {src} — run --system {system} first")
             dst_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst_dir / f"{item['id']}_{letter}.wav")
     return mapping
@@ -189,58 +212,69 @@ def main() -> None:
         raise SystemExit(f"artifact missing lora_weights.safetensors: {artifact}")
 
     out.mkdir(parents=True, exist_ok=True)
-    meta = {
-        "model_id": args.model_id,
-        "style": args.style,
-        "seed": args.seed,
-        "inference_timesteps": args.timesteps,
-        "cfg_value": args.cfg,
-        "artifact": str(artifact),
-        "lora_sha256": sha256_file(artifact / "lora_weights.safetensors"),
-        "repo_commit": repo_commit(),
-        "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
-    }
 
-    VoxCPM = load_voxcpm()
-    systems = [("baseline", None), ("tuned", str(artifact))]
-    sample_rate = 0
-    for name, lora in systems:
-        print(f"\n=== system: {name} (lora={lora}) ===")
-        model = VoxCPM.from_pretrained(hf_model_id=args.model_id, load_denoiser=False,
-                                       optimize=False, lora_weights_path=lora)
-        if args.only in ("all", "pidgin"):
-            sample_rate = generate_set(model, passages, args.style, args.seed,
-                                       args.timesteps, args.cfg,
-                                       tmp / name / "pidgin", args.skip_existing)
-        if args.only in ("all", "english"):
-            sample_rate = generate_set(model, english, args.style, args.seed,
-                                       args.timesteps, args.cfg,
-                                       tmp / name / "english", args.skip_existing)
-        del model
-        gc.collect()
-        torch.cuda.empty_cache()
+    if not args.finalize:
+        if args.limit > 0:
+            passages = passages[: args.limit]
+            english = english[: args.limit]
+        systems = []
+        if args.system in ("all", "baseline"):
+            systems.append(("baseline", None))
+        if args.system in ("all", "tuned"):
+            systems.append(("tuned", str(artifact)))
 
-    key = {"seed": args.seed,
-           "note": "A/B mapping — owner only; never share with listeners",
-           "pidgin": {}, "english": {}}
-    if args.only in ("all", "pidgin"):
+        VoxCPM = load_voxcpm()
+        for name, lora in systems:
+            print(f"\n=== system: {name} (lora={lora}) ===", flush=True)
+            mem("before load")
+            model = VoxCPM.from_pretrained(hf_model_id=args.model_id, load_denoiser=False,
+                                           optimize=False, lora_weights_path=lora)
+            mem("after load")
+            generate_set(model, passages, args.style, args.seed, args.timesteps,
+                         args.cfg, tmp / name / "pidgin", args.skip_existing)
+            generate_set(model, english, args.style, args.seed, args.timesteps,
+                         args.cfg, tmp / name / "english", args.skip_existing)
+            del model
+            gc.collect()
+            torch.cuda.empty_cache()
+            mem("after free")
+        if args.system != "all" and args.limit == 0:
+            print(f"\ngeneration done for {[s for s, _ in systems]} — "
+                  "run --finalize once both systems exist", flush=True)
+            return
+
+    if args.finalize or (args.system == "all" and args.limit == 0):
+        key = {"seed": args.seed,
+               "note": "A/B mapping — owner only; never share with listeners",
+               "pidgin": {}, "english": {}}
         key["pidgin"] = blind_map(passages, args.seed, tmp, "pidgin", out / "audio")
-        write_listener_assets(out, passages)
-    if args.only in ("all", "english"):
         key["english"] = blind_map(english, args.seed, tmp, "english",
                                    out / "english_audio")
-    (out / "key.json").write_text(json.dumps(key, indent=1), encoding="utf-8")
+        (out / "key.json").write_text(json.dumps(key, indent=1), encoding="utf-8")
+        write_listener_assets(out, passages)
 
-    meta.update({
-        "sample_rate": sample_rate,
-        "finished": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "n_pidgin": len(passages) if args.only in ("all", "pidgin") else 0,
-        "n_english": len(english) if args.only in ("all", "english") else 0,
-    })
-    (out / "manifest.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
-    print(f"\ndone -> {out}")
-    print("listeners get: audio/, instructions.md, ratings/ratings_TEMPLATE.csv")
-    print("owner keeps: key.json, manifest.json, english_audio/, tmp/")
+        sample_rate = 0
+        probe = tmp / "baseline" / "pidgin" / f"{passages[0]['id']}.wav"
+        if probe.is_file():
+            sample_rate = sf.info(str(probe)).samplerate
+        meta = {
+            "model_id": args.model_id,
+            "style": args.style,
+            "seed": args.seed,
+            "inference_timesteps": args.timesteps,
+            "cfg_value": args.cfg,
+            "artifact": str(artifact),
+            "lora_sha256": sha256_file(artifact / "lora_weights.safetensors"),
+            "repo_commit": repo_commit(),
+            "sample_rate": sample_rate,
+            "n_pidgin": len(passages),
+            "n_english": len(english),
+            "finished": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+        (out / "manifest.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
+        print(f"\ndone -> {out}", flush=True)
+        print("listeners get: audio/, instructions.md, ratings/ratings_TEMPLATE.csv")
+        print("owner keeps: key.json, manifest.json, english_audio/, tmp/")
 
 
 if __name__ == "__main__":
