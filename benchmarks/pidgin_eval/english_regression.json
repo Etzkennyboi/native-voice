@@ -1,0 +1,12 @@
+{
+  "version": "english-regression-v0",
+  "purpose": "Phase 4 English regression guard: re-generate representative English passages with the Pidgin-tuned weights to confirm the base model's English behaviour has not collapsed (README exit rule).",
+  "provenance": "eng-001 is the verbatim Phase 1 test sentence (notebooks/02_first_generation.ipynb). The repo never stored a 5-passage Phase 1 list (scripts/evaluate_outputs.py was a stub), so eng-002..005 extend the same documentary/narration register used in Phase 0/1. Recorded 2026-10-21.",
+  "passages": [
+    {"id": "eng-001", "text": "The ocean covers more than two thirds of our planet, yet most of it has never been seen by human eyes."},
+    {"id": "eng-002", "text": "The city library opens at nine in the morning and closes at seven in the evening, except on Sundays."},
+    {"id": "eng-003", "text": "Our train leaves the station at half past six, so please arrive at the platform ten minutes early."},
+    {"id": "eng-004", "text": "Scientists recorded a small increase in rainfall across the region during the last three months of the year."},
+    {"id": "eng-005", "text": "If you feel unwell, drink plenty of water, rest, and contact your doctor before taking any new medicine."}
+  ]
+}

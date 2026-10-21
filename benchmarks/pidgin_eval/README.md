@@ -43,3 +43,58 @@ No improvement may be claimed without this A/B (task constraint).
   (5 English passages from Phase 1 tests re-generated with tuned weights as a
   regression guard).
 - Otherwise → another iteration with stated failure mode (data? prosody? probe words?).
+
+## Phase 4 runbook (2026-10-21)
+
+All commands run from the repo root on a fresh free-Colab T4 session. Inference
+uses the validated OpenBMB source at the training-env commit (pinned below), not
+an unpinned package.
+
+Setup (once per session):
+
+```bash
+pip install "voxcpm==2.0.3" jiwer
+git clone https://github.com/OpenBMB/VoxCPM /content/OpenBMB-VoxCPM
+git -C /content/OpenBMB-VoxCPM checkout cce58a5b59303c9bd63d12f23afe6a49a4a80c59
+```
+
+1. Blind stimuli (25 passages × 2 systems; resumable with `--skip-existing`):
+
+```bash
+python benchmarks/pidgin_eval/generate_stimuli.py \
+  --out /content/drive/MyDrive/naturalvoice-ai-phase3/eval-YYYYMMDD \
+  --artifact /content/drive/MyDrive/naturalvoice-ai-phase3/voxcpm2-pidgin-v0 \
+  --skip-existing
+```
+
+2. Automatic WER (indication only — flagged):
+
+```bash
+python benchmarks/pidgin_eval/score_asr.py --out <eval-dir> --set pidgin  --recognizer mms --lang pcm
+python benchmarks/pidgin_eval/score_asr.py --out <eval-dir> --set english --recognizer mms --lang eng
+# if MMS has no pcm adapter: --recognizer whisper-pidgin
+```
+
+3. Human listening (mandatory gate): distribute `audio/`, `instructions.md`, and
+   `ratings/ratings_TEMPLATE.csv`. Listeners save `ratings_listener-<name>.csv`
+   into `ratings/`. The owner keeps `key.json` private until every sheet is in.
+
+4. Analysis:
+
+```bash
+python benchmarks/pidgin_eval/score_human.py --out <eval-dir>
+```
+
+   Gate: ≥ 3 complete listeners and the tuned system must win on **both**
+   naturalness and Pidgin authenticity; otherwise iterate.
+
+Notes:
+
+- Stimuli are generated with the production narration style token `(documentary)`
+  (`configs/baseline.yaml`); pass `--style ""` for raw model voice. State which
+  was used in the results record.
+- Both systems run with `load_denoiser=False`, `optimize=False` to isolate weight
+  effects; generation settings are otherwise identical (cfg 2.0, timesteps 10,
+  seed 3407).
+- Generated audio stays on Drive and is never committed (PRD §8). The English
+  regression set is `english_regression.json` (provenance recorded there).
