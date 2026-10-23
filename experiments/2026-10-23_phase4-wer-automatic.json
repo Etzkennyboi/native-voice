@@ -19,7 +19,16 @@
     "tuned": {"mean_wer": 0.456, "median_wer": 0.442, "probe_hits": 18, "probe_total": 27, "probe_rate": 0.667},
     "per_passage_better": 5,
     "per_passage_tie": 2,
-    "per_passage_worse": 13
+    "per_passage_worse": 13,
+    "significance": {
+      "mean_diff": 0.0468,
+      "median_diff": 0.0667,
+      "sd": 0.1437,
+      "bootstrap_95_ci": [-0.0143, 0.1058],
+      "sign_test": {"worse": 13, "better": 5, "ties": 2, "p_two_sided": 0.0963},
+      "wilcoxon_p_two_sided": 0.2224,
+      "reading": "gap not distinguishable from zero at 0.05; WER remains an indication only"
+    }
   },
   "english_raw": {
     "baseline": {"mean_wer": 0.011, "median_wer": 0.0},
@@ -58,6 +67,7 @@
   },
   "gate_status": {
     "automatic_ship_support": false,
+    "wer_gap": "worse point estimate (+0.047) but not distinguishable from zero at 0.05 (95% CI [-0.014, +0.106])",
     "human_eval": "pending (>=3 Pidgin speakers, blind)",
     "listener_kit": "Drive eval-20261022-raw/listener_kit"
   }

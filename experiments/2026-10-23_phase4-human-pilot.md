@@ -61,8 +61,9 @@ Of the 13 picks, 9 were passages where MMS scored the tuned model **worse**:
 - The tuned model is slower: pidgin-002 1.74x, 007 1.51x, 012 1.91x, 013 1.42x,
   020 1.56x. Slower delivery can read as more natural, independent of Pidgin
   authenticity.
-- This does **not** satisfy the ship rule: raw mean WER is still worse
-  (0.456 vs 0.410), English regressed (0.073 vs 0.011), and pidgin-012 babbles.
+- This does **not** satisfy the ship rule: the raw mean WER is worse
+  (0.456 vs 0.410), though the paired gap is within noise (95% CI
+  [-0.014, +0.106]); English regressed (0.073 vs 0.011), and pidgin-012 babbles.
 
 ## Consequence
 

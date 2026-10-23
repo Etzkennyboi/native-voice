@@ -20,6 +20,14 @@ Status: automatic metrics complete; **human A/B pending**. No quality claim.
 - Largest regressions: pidgin-012 (0.39 → 0.70), pidgin-015 (0.43 → 0.71), pidgin-019 (0.54 → 0.71), pidgin-020 (0.57 → 0.74).
 - Probe words: tuned 0.667 vs baseline 0.407 — the clear positive signal. Sample transcripts: tuned renders “wetin dey happen” and “abeg no vex” correctly where the baseline hears “wher din dey happen” / “i beg no vex”.
 
+### Paired significance (does the WER gap survive n=20?)
+
+- Paired difference (tuned − baseline): mean **+0.047**, median +0.067, sd 0.144.
+- Bootstrap 95% CI: **[-0.014, +0.106]** — includes zero.
+- Sign test: 13 worse / 5 better / 2 ties, two-sided **p = 0.096**.
+- Wilcoxon signed-rank: **p = 0.222**.
+- Reading: the point estimate is worse, but the 20-passage sample cannot distinguish it from zero at 0.05. The WER guard is **inconclusive**, not a clean fail — and still not evidence of parity. WER remains an indication only.
+
 ## Failure-mode audit (durations)
 
 - Tuned is slower: 13/20 clips longer. Overruns > 1.35× baseline: pidgin-002 (1.74), 007 (1.51), 012 (1.91), 013 (1.42), 020 (1.56).
@@ -48,5 +56,5 @@ Status: automatic metrics complete; **human A/B pending**. No quality claim.
 
 ## Gate status
 
-- Automatic checks do **not** support a ship claim: mean WER worse, English regression present, one clear degeneration case.
+- Automatic checks do **not** support a clean ship claim: the mean WER is worse but the gap is within noise (95% CI includes zero); the English regression and the pidgin-012 degeneration are real.
 - Human A/B (≥ 3 Pidgin speakers, blind) is mandatory and still pending; it is the deciding evidence. Listener kit: `eval-20261022-raw/listener_kit/` (audio + instructions + template only; `key.json` withheld).

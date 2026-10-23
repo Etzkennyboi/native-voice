@@ -62,6 +62,7 @@
     "reason": "requires >= 3 complete listeners with both scales; this is a single-listener preference pass",
     "automatic_guards": {
       "pidgin_mean_wer": {"baseline": 0.410, "tuned": 0.456},
+      "pidgin_wer_significance": "gap not distinguishable from zero at 0.05 (95% CI [-0.014, +0.106])",
       "english_mean_wer": {"baseline": 0.011, "tuned": 0.073},
       "degeneration": ["pidgin-012"]
     }
