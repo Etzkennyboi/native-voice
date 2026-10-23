@@ -103,9 +103,10 @@ python benchmarks/pidgin_eval/score_human.py --out <eval-dir>
 
 Notes:
 
-- Stimuli are generated with the production narration style token `(documentary)`
-  (`configs/baseline.yaml`); pass `--style ""` for raw model voice. State which
-  was used in the results record.
+- **Primary evaluation uses raw voice (`--style ""`)** for both systems: the
+  tuned LoRA was trained on raw transcripts and degenerates under the
+  `(documentary)` control prefix (see `experiments/2026-10-23_phase4-wer-automatic.md`).
+  The control-prefix run is retained as diagnostic evidence only.
 - Both systems run with `load_denoiser=False`, `optimize=False` to isolate weight
   effects; generation settings are otherwise identical (cfg 2.0, timesteps 10,
   seed 3407).

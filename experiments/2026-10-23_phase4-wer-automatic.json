@@ -1,0 +1,64 @@
+{
+  "stage": "phase4_automatic_metrics",
+  "date": "2026-10-23",
+  "checkpoint_id": "voxcpm2-pidgin-v0",
+  "artifact_sha256": "edd8a79adbf134d989d5112b05c4d48411b7d50e8398263059691a949b13f9a7",
+  "base_revision": "32279effe8c19989596f05d353d1447f51d9e915",
+  "settings": {
+    "style": "",
+    "cfg_value": 2.0,
+    "inference_timesteps": 10,
+    "seed": 3407,
+    "load_denoiser": false,
+    "optimize": false
+  },
+  "recognizer": "facebook/mms-1b-all (pcm / eng adapters, CC-BY-NC research only)",
+  "flag": "WER is an indication only; human A/B is the deciding evidence",
+  "pidgin_raw": {
+    "baseline": {"mean_wer": 0.410, "median_wer": 0.413, "probe_hits": 11, "probe_total": 27, "probe_rate": 0.407},
+    "tuned": {"mean_wer": 0.456, "median_wer": 0.442, "probe_hits": 18, "probe_total": 27, "probe_rate": 0.667},
+    "per_passage_better": 5,
+    "per_passage_tie": 2,
+    "per_passage_worse": 13
+  },
+  "english_raw": {
+    "baseline": {"mean_wer": 0.011, "median_wer": 0.0},
+    "tuned": {"mean_wer": 0.073, "median_wer": 0.095},
+    "note": "small word/pronunciation substitutions, no babble; one clip slower (6.2s vs 3.5s)"
+  },
+  "duration_audit": {
+    "overruns_gt_1_35x": {
+      "pidgin-002": 1.74,
+      "pidgin-007": 1.51,
+      "pidgin-012": 1.91,
+      "pidgin-013": 1.42,
+      "pidgin-020": 1.56
+    },
+    "clear_degeneration": ["pidgin-012"],
+    "mild_trailing_syllable": ["pidgin-020"],
+    "clean_but_slower": ["pidgin-002", "pidgin-007", "pidgin-013"]
+  },
+  "control_prefix_diagnostic": {
+    "style": "documentary",
+    "pidgin": {
+      "baseline_mean_wer": 0.417,
+      "tuned_mean_wer": 0.541,
+      "pidgin-006_tuned_seconds": 14.88,
+      "pidgin-006_tuned_wer": 1.0,
+      "pidgin-009_tuned_seconds": 15.68,
+      "pidgin-009_tuned_wer": 1.17
+    },
+    "raw_recheck": {
+      "pidgin-006_tuned_seconds": 9.28,
+      "pidgin-006_tuned_wer": 0.29,
+      "pidgin-009_tuned_seconds": 8.16,
+      "pidgin-009_tuned_wer": 0.3
+    },
+    "conclusion": "control prefix is OOD for the LoRA and triggers stop failure; Pidgin variant must run raw voice"
+  },
+  "gate_status": {
+    "automatic_ship_support": false,
+    "human_eval": "pending (>=3 Pidgin speakers, blind)",
+    "listener_kit": "Drive eval-20261022-raw/listener_kit"
+  }
+}
