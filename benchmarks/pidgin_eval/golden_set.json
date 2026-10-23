@@ -1,0 +1,45 @@
+{
+  "set": "golden-v0",
+  "created": "2026-10-23",
+  "checkpoint_id": "voxcpm2-pidgin-v0",
+  "artifact_sha256": "edd8a79adbf134d989d5112b05c4d48411b7d50e8398263059691a949b13f9a7",
+  "source_eval": "eval-20261022-raw",
+  "protocol": {
+    "style": "",
+    "cfg_value": 2.0,
+    "inference_timesteps": 10,
+    "seed": 3407,
+    "load_denoiser": false,
+    "optimize": false
+  },
+  "pilot": {
+    "listener": "author (single listener; not the 3-speaker gate)",
+    "method": "blind A/B preference over 20 raw-voice passages; 13 marked as good-sounding",
+    "picked_tuned": 13,
+    "picked_total": 13,
+    "chance_p_one_sided": 0.000122,
+    "note": "all 13 picks decoded to the tuned system; 9 of 13 were passages where MMS WER was worse for tuned"
+  },
+  "clips": [
+    {"id": "pidgin-001", "tier": "golden", "picked_side": "B", "note": ""},
+    {"id": "pidgin-002", "tier": "golden", "picked_side": "B", "note": "picked despite 1.74x duration and WER +0.09; clean ending, slower delivery"},
+    {"id": "pidgin-003", "tier": "coverage", "note": "not selected; coverage"},
+    {"id": "pidgin-004", "tier": "coverage", "note": "not selected; coverage"},
+    {"id": "pidgin-005", "tier": "golden", "picked_side": "B", "note": "WER tie"},
+    {"id": "pidgin-006", "tier": "golden", "picked_side": "A", "note": "picked; raw-voice re-gen fixed the documentary-prefix babble"},
+    {"id": "pidgin-007", "tier": "coverage", "note": "not selected; WER tie, 1.51x duration"},
+    {"id": "pidgin-008", "tier": "golden", "picked_side": "B", "note": "listener marked it 'excellent'"},
+    {"id": "pidgin-009", "tier": "coverage", "note": "not selected; WER 0.48 -> 0.30, raw re-gen clean"},
+    {"id": "pidgin-010", "tier": "golden", "picked_side": "B", "note": "WER 0.68 -> 0.45"},
+    {"id": "pidgin-011", "tier": "golden", "picked_side": "A", "note": "WER 0.39 -> 0.35"},
+    {"id": "pidgin-012", "tier": "coverage", "note": "known tail babble: 17.4 s vs 9.1 s, WER 0.39 -> 0.70; primary regression target"},
+    {"id": "pidgin-013", "tier": "coverage", "note": "not selected; 1.42x duration"},
+    {"id": "pidgin-014", "tier": "coverage", "note": "not selected; WER 0.61 -> 0.43"},
+    {"id": "pidgin-015", "tier": "golden", "picked_side": "A", "note": "picked despite WER +0.28; slower delivery"},
+    {"id": "pidgin-016", "tier": "golden", "picked_side": "A", "note": "picked despite WER +0.13"},
+    {"id": "pidgin-017", "tier": "golden", "picked_side": "A", "note": "picked despite WER +0.13"},
+    {"id": "pidgin-018", "tier": "golden", "picked_side": "A", "note": "picked despite WER +0.05"},
+    {"id": "pidgin-019", "tier": "golden", "picked_side": "B", "note": "picked despite WER +0.17"},
+    {"id": "pidgin-020", "tier": "golden", "picked_side": "A", "note": "picked despite trailing syllable ('...norday k') and WER +0.17"}
+  ]
+}

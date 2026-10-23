@@ -101,6 +101,36 @@ python benchmarks/pidgin_eval/score_human.py --out <eval-dir>
    Gate: ≥ 3 complete listeners and the tuned system must win on **both**
    naturalness and Pidgin authenticity; otherwise iterate.
 
+## Golden-v0 reference bar (for v1 and later)
+
+The 2026-10-23 author pilot (`experiments/2026-10-23_phase4-human-pilot.md`)
+marked 13 of 20 raw-voice clips as best-sounding; all 13 decoded to the tuned
+system. Those clips are frozen as **golden-v0** — the perceived-quality bar every
+later checkpoint must match or beat. The other 7 stay as coverage/regression
+checks, with `pidgin-012` flagged as the known tail-babble case.
+
+- Selection (committed): `benchmarks/pidgin_eval/golden_set.json` — 13 golden +
+  7 coverage passages. The pilot is **not** the human gate.
+- Build (Colab, once):
+
+```bash
+python benchmarks/pidgin_eval/build_golden_set.py \
+    --eval-dir /content/drive/MyDrive/naturalvoice-ai-phase3/eval-20261022-raw \
+    --out /content/drive/MyDrive/naturalvoice-ai-phase3/golden-set-v0
+```
+
+  It copies the tuned clip for all 20 passages and writes
+  `golden_set_manifest.json` (sha256, duration, text). Audio stays on Drive and
+  is never committed.
+
+- Use: generate the same 20 passages with a candidate checkpoint, pair candidate
+  vs golden-v0 per passage, re-randomize A/B, and have ≥ 3 Pidgin speakers rate
+  both. The candidate must match/beat v0 on the golden 13 and fix the coverage 7
+  (no babble; WER improves or holds). This is a relative bar — the absolute
+  "sounds Pidgin" claim still needs the three-listener gate above.
+- Caveat: golden-v0 is v0's own output, not ground truth. It prevents v1 from
+  regressing; it does not prove v0 is good.
+
 Notes:
 
 - **Primary evaluation uses raw voice (`--style ""`)** for both systems: the

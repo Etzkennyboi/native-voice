@@ -1,0 +1,74 @@
+{
+  "stage": "phase4_human_pilot",
+  "date": "2026-10-23",
+  "status": "pilot_only_not_gate",
+  "checkpoint_id": "voxcpm2-pidgin-v0",
+  "artifact_sha256": "edd8a79adbf134d989d5112b05c4d48411b7d50e8398263059691a949b13f9a7",
+  "source_eval": "eval-20261022-raw",
+  "protocol": {
+    "style": "",
+    "cfg_value": 2.0,
+    "inference_timesteps": 10,
+    "seed": 3407,
+    "load_denoiser": false,
+    "optimize": false
+  },
+  "listener": {
+    "who": "project author, single listener, Pidgin target user (fluency not independently verified)",
+    "method": "blind A/B preference over 20 passages; 13 marked as best-sounding",
+    "sides": {"A": 7, "B": 6}
+  },
+  "result": {
+    "picked": 13,
+    "picked_tuned": 13,
+    "picked_baseline": 0,
+    "chance_p_one_sided": 0.000122,
+    "selection_note": "13 of 20 selected (likely the clear cases); not a random sample"
+  },
+  "wer_dissociation": {
+    "picked_passages_worse_on_wer": 9,
+    "picked_passages_better_on_wer": 3,
+    "picked_passages_tied_on_wer": 1,
+    "deltas": {
+      "pidgin-001": -0.13,
+      "pidgin-002": 0.09,
+      "pidgin-005": 0.0,
+      "pidgin-006": 0.1,
+      "pidgin-008": 0.09,
+      "pidgin-010": -0.23,
+      "pidgin-011": -0.04,
+      "pidgin-015": 0.28,
+      "pidgin-016": 0.13,
+      "pidgin-017": 0.13,
+      "pidgin-018": 0.05,
+      "pidgin-019": 0.17,
+      "pidgin-020": 0.17
+    },
+    "unselected_notes": {
+      "pidgin-009": "WER -0.18 (better) but not selected",
+      "pidgin-014": "WER -0.18 (better) but not selected",
+      "pidgin-012": "WER +0.31 and known tail babble; primary regression target"
+    }
+  },
+  "limits": [
+    "one listener, not independent (project author)",
+    "preference only; no 1-5 naturalness/authenticity scales",
+    "13/20 coverage; selection effect toward clear cases",
+    "possible expectation bias despite blind key",
+    "tuned is slower on 13/20 clips (002 1.74x, 007 1.51x, 012 1.91x, 013 1.42x, 020 1.56x)"
+  ],
+  "gate_status": {
+    "met": false,
+    "reason": "requires >= 3 complete listeners with both scales; this is a single-listener preference pass",
+    "automatic_guards": {
+      "pidgin_mean_wer": {"baseline": 0.410, "tuned": 0.456},
+      "english_mean_wer": {"baseline": 0.011, "tuned": 0.073},
+      "degeneration": ["pidgin-012"]
+    }
+  },
+  "consequence": {
+    "prior": "v0 likely has a real perceived Pidgin win despite worse WER and English drift",
+    "golden_set": "benchmarks/pidgin_eval/golden_set.json (13 golden + 7 coverage)",
+    "next": "2-3 fresh Pidgin speakers rate all 20; then score_human.py and the Phase 4 verdict"
+  }
+}
